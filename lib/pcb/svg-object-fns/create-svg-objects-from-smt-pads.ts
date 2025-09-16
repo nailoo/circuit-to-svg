@@ -20,40 +20,6 @@ export function createSvgObjectsFromSmtPad(
       pad.layer as keyof typeof colorMap.soldermask
     ] ?? colorMap.soldermask.top
 
-  const createPadElements = (
-    elementName: "rect" | "circle" | "polygon",
-    geometry: Record<string, string>,
-  ) => {
-    const padElement = {
-      name: elementName,
-      type: "element",
-      attributes: {
-        ...geometry,
-        class: "pcb-pad",
-        fill: layerNameToColor(pad.layer, colorMap),
-        "data-layer": pad.layer,
-      },
-    }
-
-    if (!isCoveredWithSolderMask) {
-      return [padElement]
-    }
-
-    return [
-      padElement,
-      {
-        name: elementName,
-        type: "element",
-        attributes: {
-          ...geometry,
-          class: "pcb-solder-mask",
-          fill: solderMaskColor,
-          "data-layer": pad.layer,
-        },
-      },
-    ]
-  }
-
   if (pad.shape === "rect" || pad.shape === "rotated_rect") {
     const width = pad.width * Math.abs(transform.a)
     const height = pad.height * Math.abs(transform.d)
@@ -62,33 +28,98 @@ export function createSvgObjectsFromSmtPad(
       ((pad as any).rect_border_radius ?? 0) * Math.abs(transform.a)
 
     if (pad.shape === "rotated_rect" && pad.ccw_rotation) {
-      return createPadElements("rect", {
-        x: (-width / 2).toString(),
-        y: (-height / 2).toString(),
-        width: width.toString(),
-        height: height.toString(),
-        transform: `translate(${x} ${y}) rotate(${-pad.ccw_rotation})`,
-        ...(scaledBorderRadius
-          ? {
-              rx: scaledBorderRadius.toString(),
-              ry: scaledBorderRadius.toString(),
-            }
-          : {}),
+      const elements = [
+        {
+          name: "rect",
+          type: "element",
+          attributes: {
+            class: "pcb-pad",
+            fill: layerNameToColor(pad.layer, colorMap),
+            x: (-width / 2).toString(),
+            y: (-height / 2).toString(),
+            width: width.toString(),
+            height: height.toString(),
+            transform: `translate(${x} ${y}) rotate(${-pad.ccw_rotation})`,
+            "data-layer": pad.layer,
+            ...(scaledBorderRadius
+              ? {
+                  rx: scaledBorderRadius.toString(),
+                  ry: scaledBorderRadius.toString(),
+                }
+              : {}),
+          },
+        },
+      ]
+
+      if (isCoveredWithSolderMask) {
+        const padAttributes = elements[0].attributes as Record<string, string>
+
+        elements.push({
+          name: "rect",
+          type: "element",
+          attributes: {
+            class: "pcb-solder-mask",
+            fill: solderMaskColor,
+            x: padAttributes.x,
+            y: padAttributes.y,
+            width: padAttributes.width,
+            height: padAttributes.height,
+            "data-layer": pad.layer,
+            ...(padAttributes.transform
+              ? { transform: padAttributes.transform }
+              : {}),
+            ...(padAttributes.rx ? { rx: padAttributes.rx } : {}),
+            ...(padAttributes.ry ? { ry: padAttributes.ry } : {}),
+          },
+        })
+      }
+
+      return elements
+    }
+
+    const elements = [
+      {
+        name: "rect",
+        type: "element",
+        attributes: {
+          class: "pcb-pad",
+          fill: layerNameToColor(pad.layer, colorMap),
+          x: (x - width / 2).toString(),
+          y: (y - height / 2).toString(),
+          width: width.toString(),
+          height: height.toString(),
+          "data-layer": pad.layer,
+          ...(scaledBorderRadius
+            ? {
+                rx: scaledBorderRadius.toString(),
+                ry: scaledBorderRadius.toString(),
+              }
+            : {}),
+        },
+      },
+    ]
+
+    if (isCoveredWithSolderMask) {
+      const padAttributes = elements[0].attributes as Record<string, string>
+
+      elements.push({
+        name: "rect",
+        type: "element",
+        attributes: {
+          class: "pcb-solder-mask",
+          fill: solderMaskColor,
+          x: padAttributes.x,
+          y: padAttributes.y,
+          width: padAttributes.width,
+          height: padAttributes.height,
+          "data-layer": pad.layer,
+          ...(padAttributes.rx ? { rx: padAttributes.rx } : {}),
+          ...(padAttributes.ry ? { ry: padAttributes.ry } : {}),
+        },
       })
     }
 
-    return createPadElements("rect", {
-      x: (x - width / 2).toString(),
-      y: (y - height / 2).toString(),
-      width: width.toString(),
-      height: height.toString(),
-      ...(scaledBorderRadius
-        ? {
-            rx: scaledBorderRadius.toString(),
-            ry: scaledBorderRadius.toString(),
-          }
-        : {}),
-    })
+    return elements
   }
 
   if (pad.shape === "pill") {
@@ -97,24 +128,83 @@ export function createSvgObjectsFromSmtPad(
     const radius = pad.radius * Math.abs(transform.a)
     const [x, y] = applyToPoint(transform, [pad.x, pad.y])
 
-    return createPadElements("rect", {
-      x: (x - width / 2).toString(),
-      y: (y - height / 2).toString(),
-      width: width.toString(),
-      height: height.toString(),
-      rx: radius.toString(),
-      ry: radius.toString(),
-    })
+    const elements = [
+      {
+        name: "rect",
+        type: "element",
+        attributes: {
+          class: "pcb-pad",
+          fill: layerNameToColor(pad.layer, colorMap),
+          x: (x - width / 2).toString(),
+          y: (y - height / 2).toString(),
+          width: width.toString(),
+          height: height.toString(),
+          rx: radius.toString(),
+          ry: radius.toString(),
+          "data-layer": pad.layer,
+        },
+      },
+    ]
+
+    if (isCoveredWithSolderMask) {
+      const padAttributes = elements[0].attributes as Record<string, string>
+
+      elements.push({
+        name: "rect",
+        type: "element",
+        attributes: {
+          class: "pcb-solder-mask",
+          fill: solderMaskColor,
+          x: padAttributes.x,
+          y: padAttributes.y,
+          width: padAttributes.width,
+          height: padAttributes.height,
+          rx: padAttributes.rx,
+          ry: padAttributes.ry,
+          "data-layer": pad.layer,
+        },
+      })
+    }
+
+    return elements
   }
   if (pad.shape === "circle") {
     const radius = pad.radius * Math.abs(transform.a)
     const [x, y] = applyToPoint(transform, [pad.x, pad.y])
 
-    return createPadElements("circle", {
-      cx: x.toString(),
-      cy: y.toString(),
-      r: radius.toString(),
-    })
+    const elements = [
+      {
+        name: "circle",
+        type: "element",
+        attributes: {
+          class: "pcb-pad",
+          fill: layerNameToColor(pad.layer, colorMap),
+          cx: x.toString(),
+          cy: y.toString(),
+          r: radius.toString(),
+          "data-layer": pad.layer,
+        },
+      },
+    ]
+
+    if (isCoveredWithSolderMask) {
+      const padAttributes = elements[0].attributes as Record<string, string>
+
+      elements.push({
+        name: "circle",
+        type: "element",
+        attributes: {
+          class: "pcb-solder-mask",
+          fill: solderMaskColor,
+          cx: padAttributes.cx,
+          cy: padAttributes.cy,
+          r: padAttributes.r,
+          "data-layer": pad.layer,
+        },
+      })
+    }
+
+    return elements
   }
 
   if (pad.shape === "polygon") {
@@ -122,9 +212,35 @@ export function createSvgObjectsFromSmtPad(
       applyToPoint(transform, [point.x, point.y]),
     )
 
-    return createPadElements("polygon", {
-      points: points.map((p) => p.join(",")).join(" "),
-    })
+    const elements = [
+      {
+        name: "polygon",
+        type: "element",
+        attributes: {
+          class: "pcb-pad",
+          fill: layerNameToColor(pad.layer, colorMap),
+          points: points.map((p) => p.join(",")).join(" "),
+          "data-layer": pad.layer,
+        },
+      },
+    ]
+
+    if (isCoveredWithSolderMask) {
+      const padAttributes = elements[0].attributes as Record<string, string>
+
+      elements.push({
+        name: "polygon",
+        type: "element",
+        attributes: {
+          class: "pcb-solder-mask",
+          fill: solderMaskColor,
+          points: padAttributes.points,
+          "data-layer": pad.layer,
+        },
+      })
+    }
+
+    return elements
   }
 
   // TODO: Implement SMT pad circles/ovals etc.
