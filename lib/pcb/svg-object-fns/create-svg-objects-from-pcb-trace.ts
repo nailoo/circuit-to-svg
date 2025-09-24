@@ -10,6 +10,9 @@ export function createSvgObjectsFromPcbTrace(
   ctx: PcbContext,
 ): SvgObject[] {
   const { transform, layer: layerFilter, colorMap } = ctx
+  const isCoveredWithSolderMask = Boolean(
+    (trace as any)?.is_covered_with_solder_mask,
+  )
   if (!trace.route || !Array.isArray(trace.route) || trace.route.length < 2)
     return []
 
@@ -25,26 +28,29 @@ export function createSvgObjectsFromPcbTrace(
     if (!layer) continue
     if (layerFilter && layer !== layerFilter) continue
 
-    const layerColor =
+    const copperColor = layerNameToColor(layer, colorMap)
+    const solderMaskColor =
       colorMap.soldermask[layer as keyof typeof colorMap.soldermask] ??
-      layerNameToColor(layer, colorMap)
+      copperColor
 
     const traceWidth =
       "width" in start ? start.width : "width" in end ? end.width : null
 
-    const svgObject: SvgObject = {
+    const strokeWidth = traceWidth
+      ? (traceWidth * Math.abs(transform.a)).toString()
+      : "0.3"
+
+    const copperTrace: SvgObject = {
       name: "path",
       type: "element",
       value: "",
       children: [],
       attributes: {
         class: "pcb-trace",
-        stroke: layerColor,
+        stroke: copperColor,
         fill: "none",
         d: `M ${startPoint[0]} ${startPoint[1]} L ${endPoint[0]} ${endPoint[1]}`,
-        "stroke-width": traceWidth
-          ? (traceWidth * Math.abs(transform.a)).toString()
-          : "0.3",
+        "stroke-width": strokeWidth,
         "stroke-linecap": "round",
         "stroke-linejoin": "round",
         "shape-rendering": "crispEdges",
@@ -52,7 +58,20 @@ export function createSvgObjectsFromPcbTrace(
       },
     }
 
-    svgObjects.push(svgObject)
+    svgObjects.push(copperTrace)
+
+    if (isCoveredWithSolderMask) {
+      const solderMaskTrace: SvgObject = {
+        ...copperTrace,
+        attributes: {
+          ...copperTrace.attributes,
+          class: `${copperTrace.attributes.class} pcb-solder-mask`,
+          stroke: solderMaskColor,
+        },
+      }
+
+      svgObjects.push(solderMaskTrace)
+    }
   }
 
   svgObjects.sort((a, b) => {

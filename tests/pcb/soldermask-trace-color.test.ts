@@ -12,6 +12,7 @@ const circuit: any = [
   {
     type: "pcb_trace",
     pcb_trace_id: "trace0",
+    is_covered_with_solder_mask: true,
     route: [
       { route_type: "wire", x: -2, y: 0, width: 0.2, layer: "top" },
       { route_type: "wire", x: 2, y: 0, width: 0.2, layer: "top" },
@@ -19,7 +20,7 @@ const circuit: any = [
   },
 ]
 
-test("traces use soldermask color when specified", () => {
+test("covered traces use soldermask color when specified", () => {
   const svg = convertCircuitJsonToPcbSvg(circuit, {
     colorOverrides: {
       copper: { top: "#ff0000" },

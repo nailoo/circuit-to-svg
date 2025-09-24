@@ -65,7 +65,7 @@ export function createSvgObjectsFromSmtPad(
         },
       }
 
-      return [padElement, maskElement]
+      return [maskElement, padElement]
     }
 
     const padElement: SvgObject = {
@@ -106,7 +106,7 @@ export function createSvgObjectsFromSmtPad(
       },
     }
 
-    return [padElement, maskElement]
+    return [maskElement, padElement]
   }
 
   if (pad.shape === "pill") {
@@ -149,7 +149,7 @@ export function createSvgObjectsFromSmtPad(
       },
     }
 
-    return [padElement, maskElement]
+    return [maskElement, padElement]
   }
   if (pad.shape === "circle") {
     const radius = pad.radius * Math.abs(transform.a)
@@ -186,7 +186,7 @@ export function createSvgObjectsFromSmtPad(
       },
     }
 
-    return [padElement, maskElement]
+    return [maskElement, padElement]
   }
 
   if (pad.shape === "polygon") {
@@ -223,7 +223,7 @@ export function createSvgObjectsFromSmtPad(
       },
     }
 
-    return [padElement, maskElement]
+    return [maskElement, padElement]
   }
 
   // TODO: Implement SMT pad circles/ovals etc.
