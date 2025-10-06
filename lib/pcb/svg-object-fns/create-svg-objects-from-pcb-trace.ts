@@ -3,10 +3,7 @@ import { pairs } from "lib/utils/pairs"
 import type { INode as SvgObject } from "svgson"
 import { applyToPoint } from "transformation-matrix"
 import { layerNameToColor } from "../layer-name-to-color"
-import {
-  compareCopperLayers,
-  normalizeCopperLayerName,
-} from "../layer-order"
+import { compareCopperLayers, normalizeCopperLayerName } from "../layer-order"
 import type { CopperLayerName } from "../colors"
 import type { PcbContext } from "../convert-circuit-json-to-pcb-svg"
 

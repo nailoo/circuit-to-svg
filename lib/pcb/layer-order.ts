@@ -20,20 +20,15 @@ const COPPER_LAYER_PRIORITY: Record<CopperLayerName, number> =
     {} as Record<CopperLayerName, number>,
   )
 
-const CANONICAL_LAYER_LOOKUP = COPPER_LAYER_ORDER.reduce(
-  (acc, layer) => {
-    acc.set(layer, layer)
-    acc.set(layer.toLowerCase(), layer)
-    return acc
-  },
-  new Map<string, CopperLayerName>(),
-)
+const CANONICAL_LAYER_LOOKUP = COPPER_LAYER_ORDER.reduce((acc, layer) => {
+  acc.set(layer, layer)
+  acc.set(layer.toLowerCase(), layer)
+  return acc
+}, new Map<string, CopperLayerName>())
 
 const INNER_LAYER_REGEX = /^inner\s*0*(\d+)$/
 
-function canonicalizeLayerName(
-  value: string,
-): CopperLayerName | undefined {
+function canonicalizeLayerName(value: string): CopperLayerName | undefined {
   const trimmed = value.trim()
   if (!trimmed) return undefined
 
@@ -58,9 +53,7 @@ function canonicalizeLayerName(
   return CANONICAL_LAYER_LOOKUP.get(canonical)
 }
 
-export function isCopperLayerName(
-  layer: unknown,
-): layer is CopperLayerName {
+export function isCopperLayerName(layer: unknown): layer is CopperLayerName {
   if (typeof layer !== "string") return false
 
   return Boolean(canonicalizeLayerName(layer))

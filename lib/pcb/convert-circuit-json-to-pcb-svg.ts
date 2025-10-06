@@ -1,4 +1,9 @@
-import type { Point, AnyCircuitElement, pcb_cutout, PcbCutout } from "circuit-json"
+import type {
+  Point,
+  AnyCircuitElement,
+  pcb_cutout,
+  PcbCutout,
+} from "circuit-json"
 import { type INode as SvgObject, stringify } from "svgson"
 import {
   type Matrix,
@@ -34,10 +39,7 @@ import {
 import { createSvgObjectsFromPcbComponent } from "./svg-object-fns/create-svg-objects-from-pcb-component"
 import { getSoftwareUsedString } from "../utils/get-software-used-string"
 import { CIRCUIT_TO_SVG_VERSION } from "../package-version"
-import {
-  compareCopperLayers,
-  normalizeCopperLayerName,
-} from "./layer-order"
+import { compareCopperLayers, normalizeCopperLayerName } from "./layer-order"
 
 const OBJECT_ORDER: AnyCircuitElement["type"][] = [
   "pcb_trace_error",
