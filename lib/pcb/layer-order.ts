@@ -11,13 +11,6 @@ export const COPPER_LAYER_ORDER: readonly CopperLayerName[] = [
   "bottom",
 ] as const
 
-const COPPER_LAYER_PRIORITY = new Map(
-  COPPER_LAYER_ORDER.map((layer, index) => [
-    layer,
-    COPPER_LAYER_ORDER.length - index - 1,
-  ] satisfies [CopperLayerName, number]),
-)
-
 export function isCopperLayerName(
   layer: unknown,
 ): layer is CopperLayerName {
@@ -30,13 +23,13 @@ export function isCopperLayerName(
 export function normalizeCopperLayerName(
   layer: unknown,
 ): CopperLayerName | undefined {
-  if (typeof layer === "string" && isCopperLayerName(layer)) {
+  if (isCopperLayerName(layer)) {
     return layer
   }
 
   if (layer && typeof layer === "object" && "name" in layer) {
     const name = (layer as { name?: unknown }).name
-    if (typeof name === "string" && isCopperLayerName(name)) {
+    if (isCopperLayerName(name)) {
       return name
     }
   }
@@ -48,12 +41,12 @@ export function compareCopperLayers(
   a: CopperLayerName,
   b: CopperLayerName,
 ): number {
-  const priorityA = COPPER_LAYER_PRIORITY.get(a)
-  const priorityB = COPPER_LAYER_PRIORITY.get(b)
+  const indexA = COPPER_LAYER_ORDER.indexOf(a)
+  const indexB = COPPER_LAYER_ORDER.indexOf(b)
 
-  if (priorityA === undefined || priorityB === undefined) {
+  if (indexA === -1 || indexB === -1) {
     return 0
   }
 
-  return priorityA - priorityB
+  return indexB - indexA
 }
