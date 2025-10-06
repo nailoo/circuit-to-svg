@@ -274,6 +274,9 @@ export function convertCircuitJsonToPcbSvg(
     if (elm.type === "pcb_smtpad") {
       return normalizeCopperLayerName(elm.layer)
     }
+    if (elm.type === "pcb_copper_pour") {
+      return normalizeCopperLayerName(elm.layer)
+    }
     if (elm.type === "pcb_trace") {
       for (const seg of elm.route ?? []) {
         const candidates: unknown[] = []
@@ -294,7 +297,11 @@ export function convertCircuitJsonToPcbSvg(
   }
 
   function isCopper(elm: AnyCircuitElement) {
-    return elm.type === "pcb_trace" || elm.type === "pcb_smtpad"
+    return (
+      elm.type === "pcb_trace" ||
+      elm.type === "pcb_smtpad" ||
+      elm.type === "pcb_copper_pour"
+    )
   }
 
   let svgObjects = circuitJson
@@ -312,6 +319,21 @@ export function convertCircuitJsonToPcbSvg(
       )
     })
     .flatMap((elm) => createSvgObjects({ elm, circuitJson, ctx }))
+
+  svgObjects = svgObjects
+    .map((object, index) => ({
+      object,
+      index,
+      layer: normalizeCopperLayerName(object.attributes?.["data-layer"]),
+    }))
+    .sort((a, b) => {
+      if (a.layer && b.layer && a.layer !== b.layer) {
+        return compareCopperLayers(a.layer, b.layer)
+      }
+
+      return a.index - b.index
+    })
+    .map(({ object }) => object)
 
   let strokeWidth = String(0.05 * scaleFactor)
 
