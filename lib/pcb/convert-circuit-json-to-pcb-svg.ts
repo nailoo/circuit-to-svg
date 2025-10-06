@@ -1,10 +1,4 @@
-import type {
-  Point,
-  AnyCircuitElement,
-  pcb_cutout,
-  PcbCutout,
-  VisibleLayer,
-} from "circuit-json"
+import type { Point, AnyCircuitElement, pcb_cutout, PcbCutout } from "circuit-json"
 import { type INode as SvgObject, stringify } from "svgson"
 import {
   type Matrix,
@@ -33,12 +27,17 @@ import { createSvgObjectsFromPcbCopperPour } from "./svg-object-fns/create-svg-o
 import {
   DEFAULT_PCB_COLOR_MAP,
   type CopperColorMap,
+  type CopperLayerName,
   type PcbColorMap,
   type PcbColorOverrides,
 } from "./colors"
 import { createSvgObjectsFromPcbComponent } from "./svg-object-fns/create-svg-objects-from-pcb-component"
 import { getSoftwareUsedString } from "../utils/get-software-used-string"
 import { CIRCUIT_TO_SVG_VERSION } from "../package-version"
+import {
+  compareCopperLayers,
+  normalizeCopperLayerName,
+} from "./layer-order"
 
 const OBJECT_ORDER: AnyCircuitElement["type"][] = [
   "pcb_trace_error",
@@ -271,22 +270,23 @@ export function convertCircuitJsonToPcbSvg(
     renderSolderMask: options?.renderSolderMask,
   }
 
-  function getLayer(elm: AnyCircuitElement): VisibleLayer | undefined {
+  function getLayer(elm: AnyCircuitElement): CopperLayerName | undefined {
     if (elm.type === "pcb_smtpad") {
-      return elm.layer === "top" || elm.layer === "bottom"
-        ? elm.layer
-        : undefined
+      return normalizeCopperLayerName(elm.layer)
     }
     if (elm.type === "pcb_trace") {
       for (const seg of elm.route ?? []) {
-        const candidate =
-          ("layer" in seg && seg.layer) ||
-          ("from_layer" in seg && seg.from_layer) ||
-          ("to_layer" in seg && seg.to_layer) ||
-          undefined
+        const candidates: unknown[] = []
 
-        if (candidate === "top" || candidate === "bottom") {
-          return candidate
+        if ("layer" in seg) candidates.push(seg.layer)
+        if ("from_layer" in seg) candidates.push(seg.from_layer)
+        if ("to_layer" in seg) candidates.push(seg.to_layer)
+
+        for (const candidate of candidates) {
+          const normalized = normalizeCopperLayerName(candidate)
+          if (normalized) {
+            return normalized
+          }
         }
       }
     }
@@ -302,11 +302,8 @@ export function convertCircuitJsonToPcbSvg(
       const layerA = getLayer(a)
       const layerB = getLayer(b)
 
-      if (isCopper(a) && isCopper(b) && layerA !== layerB) {
-        if (layerA === "top") return 1
-        if (layerB === "top") return -1
-        if (layerA === "bottom") return -1
-        if (layerB === "bottom") return 1
+      if (isCopper(a) && isCopper(b) && layerA && layerB && layerA !== layerB) {
+        return compareCopperLayers(layerA, layerB)
       }
 
       return (
