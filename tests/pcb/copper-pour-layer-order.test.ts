@@ -9,7 +9,7 @@ const board = {
   height: 10,
 }
 
-test("top copper pour renders above bottom copper pour", () => {
+test("bottom copper pour renders above top copper pour", () => {
   const svg = convertCircuitJsonToPcbSvg([
     board,
     {
@@ -32,24 +32,24 @@ test("top copper pour renders above bottom copper pour", () => {
     },
   ] as any)
 
-  const topIndex = svg.indexOf('data-layer="top"')
   const bottomIndex = svg.indexOf('data-layer="bottom"')
+  const topIndex = svg.indexOf('data-layer="top"')
 
   expect(topIndex).toBeGreaterThan(-1)
   expect(bottomIndex).toBeGreaterThan(-1)
-  expect(topIndex).toBeLessThan(bottomIndex)
+  expect(bottomIndex).toBeLessThan(topIndex)
 })
 
-test("copper features render from top layer to bottom layer", () => {
+test("copper features render from bottom layer to top layer", () => {
   const orderedLayers = [
-    "top",
-    "inner1",
-    "inner2",
-    "inner3",
-    "inner4",
-    "inner5",
-    "inner6",
     "bottom",
+    "inner6",
+    "inner5",
+    "inner4",
+    "inner3",
+    "inner2",
+    "inner1",
+    "top",
   ] as const
 
   const pours = orderedLayers
