@@ -57,6 +57,19 @@ const OBJECT_ORDER: AnyCircuitElement["type"][] = [
   "pcb_board",
 ]
 
+type CopperLayer = VisibleLayer | `inner${number}`
+
+const COPPER_LAYER_STACK: CopperLayer[] = [
+  "top",
+  "inner1",
+  "inner2",
+  "inner3",
+  "inner4",
+  "inner5",
+  "inner6",
+  "bottom",
+]
+
 interface PointObjectNotation {
   x: number
   y: number
@@ -271,11 +284,35 @@ export function convertCircuitJsonToPcbSvg(
     renderSolderMask: options?.renderSolderMask,
   }
 
-  function getLayer(elm: AnyCircuitElement): VisibleLayer | undefined {
+  function isCopperLayer(layer: unknown): layer is CopperLayer {
+    if (typeof layer !== "string") {
+      return false
+    }
+
+    return layer === "top" || layer === "bottom" || /^inner\d+$/.test(layer)
+  }
+
+  function getCopperLayerOrder(layer?: CopperLayer): number | undefined {
+    if (!layer) {
+      return undefined
+    }
+
+    const stackIndex = COPPER_LAYER_STACK.indexOf(layer)
+    if (stackIndex !== -1) {
+      return stackIndex
+    }
+
+    const match = /^inner(\d+)$/.exec(layer)
+    if (match) {
+      return Number.parseInt(match[1], 10)
+    }
+
+    return undefined
+  }
+
+  function getLayer(elm: AnyCircuitElement): CopperLayer | undefined {
     if (elm.type === "pcb_smtpad") {
-      return elm.layer === "top" || elm.layer === "bottom"
-        ? elm.layer
-        : undefined
+      return isCopperLayer(elm.layer) ? elm.layer : undefined
     }
     if (elm.type === "pcb_trace") {
       for (const seg of elm.route ?? []) {
@@ -285,7 +322,7 @@ export function convertCircuitJsonToPcbSvg(
           ("to_layer" in seg && seg.to_layer) ||
           undefined
 
-        if (candidate === "top" || candidate === "bottom") {
+        if (isCopperLayer(candidate)) {
           return candidate
         }
       }
@@ -302,11 +339,15 @@ export function convertCircuitJsonToPcbSvg(
       const layerA = getLayer(a)
       const layerB = getLayer(b)
 
-      if (isCopper(a) && isCopper(b) && layerA !== layerB) {
-        if (layerA === "top") return 1
-        if (layerB === "top") return -1
-        if (layerA === "bottom") return -1
-        if (layerB === "bottom") return 1
+      if (isCopper(a) && isCopper(b)) {
+        const orderA = getCopperLayerOrder(layerA)
+        const orderB = getCopperLayerOrder(layerB)
+
+        if (orderA !== orderB) {
+          if (orderA === undefined) return -1
+          if (orderB === undefined) return 1
+          return orderB - orderA
+        }
       }
 
       return (
