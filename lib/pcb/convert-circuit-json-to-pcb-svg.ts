@@ -334,6 +334,24 @@ export function convertCircuitJsonToPcbSvg(
     })
     .flatMap((elm) => createSvgObjects({ elm, circuitJson, ctx }))
 
+  const copperLayerOf = (object: SvgObject): CopperLayerName | undefined => {
+    const layer = object.attributes?.["data-layer"]
+    if (typeof layer !== "string") return undefined
+
+    return getCopperLayerName(layer)
+  }
+
+  svgObjects = svgObjects.sort((a, b) => {
+    const layerA = copperLayerOf(a)
+    const layerB = copperLayerOf(b)
+
+    if (layerA && layerB && layerA !== layerB) {
+      return compareCopperLayers(layerA, layerB)
+    }
+
+    return 0
+  })
+
   let strokeWidth = String(0.05 * scaleFactor)
 
   for (const element of circuitJson) {

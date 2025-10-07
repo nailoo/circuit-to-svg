@@ -39,3 +39,44 @@ test("top copper pour renders above bottom copper pour", () => {
   expect(bottomIndex).toBeGreaterThan(-1)
   expect(topIndex).toBeLessThan(bottomIndex)
 })
+
+test("copper features render from top layer to bottom layer", () => {
+  const orderedLayers = [
+    "top",
+    "inner1",
+    "inner2",
+    "inner3",
+    "inner4",
+    "inner5",
+    "inner6",
+    "bottom",
+  ] as const
+
+  const pours = orderedLayers
+    .slice()
+    .reverse()
+    .map((layer, index) => ({
+      type: "pcb_copper_pour" as const,
+      pcb_copper_pour_id: `pour_${layer}_${index}`,
+      layer,
+      shape: "rect" as const,
+      center: { x: 0, y: 0 },
+      width: 6,
+      height: 6,
+    }))
+
+  const svg = convertCircuitJsonToPcbSvg([board, ...pours] as any)
+
+  const layerPositions = orderedLayers.map((layer) => ({
+    layer,
+    index: svg.indexOf(`data-layer="${layer}"`),
+  }))
+
+  for (const { index } of layerPositions) {
+    expect(index).toBeGreaterThan(-1)
+  }
+
+  for (let i = 0; i < layerPositions.length - 1; i += 1) {
+    expect(layerPositions[i]!.index).toBeLessThan(layerPositions[i + 1]!.index)
+  }
+})
